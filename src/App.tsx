@@ -1,7 +1,10 @@
+// Componente principal do protótipo OxyTalento.
+// Ele organiza o fluxo de telas do marketplace de serviços e os componentes reutilizáveis.
 import { useState, type ReactNode } from "react";
 
 type Page = "login" | "home" | "search" | "professional" | "request" | "messages";
 
+// Fotos de perfil para os usuários e profissionais exibidos no protótipo.
 const photos = {
   carlos: "https://images.unsplash.com/photo-1729795795561-97daeedfec02?crop=faces&fit=crop&w=320&h=320&q=85",
   marcos: "https://images.unsplash.com/photo-1695927621677-ec96e048dce2?crop=faces&fit=crop&w=320&h=320&q=85",
@@ -144,6 +147,7 @@ const MessageRow = ({ photo, name, text, time, unread }: { photo: string; name: 
   </div>
 );
 
+// Estado principal do fluxo navegável do protótipo.
 export default function App() {
   const [page, setPage] = useState<Page>("login");
   const [identifier, setIdentifier] = useState("");
@@ -177,6 +181,7 @@ export default function App() {
     setPage("search");
   };
 
+  // Renderiza a tela ativa do protótipo de acordo com o estado da navegação.
   return (
     <main className="showcase">
       <header className="presentation-header">

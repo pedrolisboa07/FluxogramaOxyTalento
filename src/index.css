@@ -1,5 +1,7 @@
+/* Tema visual e estilos globais do protótipo OxyTalento. */
 @import "tailwindcss";
 
+/* Variáveis de cor e base do design system da aplicação. */
 :root {
   --navy: #062b59;
   --navy-deep: #041e40;
