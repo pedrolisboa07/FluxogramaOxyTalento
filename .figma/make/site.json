@@ -1,0 +1,10 @@
+{
+  "description": "Connect with local professionals and service providers through a streamlined platform offering search, messaging, booking, and secure transactions.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
