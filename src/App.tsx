@@ -80,7 +80,12 @@ const BottomNav = ({ active, onNavigate }: { active: string; onNavigate: (page: 
         role="button"
         tabIndex={0}
         onClick={() => onNavigate(destination as Page)}
-        onKeyDown={(event) => (event.key === "Enter" || event.key === " ") && onNavigate(destination as Page)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onNavigate(destination as Page);
+          }
+        }}
       >
         <span><Icon name={icon as IconName} size={17} /></span>
         <small>{label}</small>
@@ -121,7 +126,12 @@ const SectionHeader = ({ title, action, onAction }: { title: string; action?: st
 );
 
 const Category = ({ icon, label, active = false, onSelect }: { icon: IconName; label: string; active?: boolean; onSelect?: () => void }) => (
-  <div className={`category ${active ? "selected" : ""}`} role={onSelect ? "button" : undefined} tabIndex={onSelect ? 0 : undefined} onClick={onSelect} onKeyDown={(event) => event.key === "Enter" && onSelect?.()}><span><Icon name={icon} size={20}/></span><small>{label}</small></div>
+  <div className={`category ${active ? "selected" : ""}`} role={onSelect ? "button" : undefined} tabIndex={onSelect ? 0 : undefined} onClick={onSelect} onKeyDown={(event) => {
+    if (onSelect && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      onSelect();
+    }
+  }}><span><Icon name={icon} size={20}/></span><small>{label}</small></div>
 );
 
 const Verified = () => <span className="verified"><Icon name="check" size={8}/></span>;
@@ -135,7 +145,12 @@ const ProRow = ({ photo, name, job, price, rating, distance, onSelect }: { photo
       <div className="rating"><Icon name="star" size={10}/><b>{rating}</b> <span>(87 avaliações)</span></div>
       <div className="distance"><Icon name="pin" size={9}/>{distance}</div>
     </div>
-    <div className="pro-action"><small>A partir de</small><b>R$ {price}</b><span role="button" tabIndex={0} onClick={onSelect} onKeyDown={(event) => event.key === "Enter" && onSelect()}>Ver perfil</span></div>
+    <div className="pro-action"><small>A partir de</small><b>R$ {price}</b><span role="button" tabIndex={0} onClick={onSelect} onKeyDown={(event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onSelect();
+      }
+    }}>Ver perfil</span></div>
   </div>
 );
 
