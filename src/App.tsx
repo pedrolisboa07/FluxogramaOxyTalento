@@ -2,7 +2,17 @@
 // Ele organiza o fluxo de telas do marketplace de serviços e os componentes reutilizáveis.
 import { useState, type ReactNode } from "react";
 
-type Page = "login" | "home" | "search" | "professional" | "request" | "messages";
+type Page = "login" | "home" | "search" | "professional" | "request" | "contracts";
+type ContractStatus = "Aguardando" | "Em andamento" | "Concluído" | "Cancelado";
+type Contract = {
+  id: string;
+  title: string;
+  professional: string;
+  date: string;
+  price: string;
+  status: ContractStatus;
+  description: string;
+};
 
 // Fotos de perfil para os usuários e profissionais exibidos no protótipo.
 const photos = {
@@ -13,7 +23,7 @@ const photos = {
 };
 
 type IconName =
-  | "home" | "chat" | "plus" | "file" | "user" | "pin" | "bell" | "search"
+  | "home" | "plus" | "file" | "user" | "pin" | "bell" | "search"
   | "filter" | "back" | "eye" | "lock" | "mail" | "star" | "check" | "clock"
   | "shield" | "camera" | "calendar" | "tool" | "spark" | "laptop" | "clean"
   | "book" | "food" | "beauty" | "more" | "whatsapp";
@@ -21,7 +31,6 @@ type IconName =
 const Icon = ({ name, size = 18 }: { name: IconName; size?: number }) => {
   const paths: Record<IconName, ReactNode> = {
     home: <><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10M9 21v-7h6v7"/></>,
-    chat: <><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></>,
     plus: <path d="M12 5v14M5 12h14"/>,
     file: <><path d="M6 2h8l4 4v16H6Z"/><path d="M14 2v5h5M9 12h6M9 16h6"/></>,
     user: <><circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></>,
@@ -69,21 +78,22 @@ const StatusBar = ({ dark = false }: { dark?: boolean }) => (
   </div>
 );
 
-const BottomNav = ({ active, onNavigate }: { active: string; onNavigate: (page: Page) => void }) => (
+const BottomNav = ({ active, onNavigate, onWhatsApp }: { active: string; onNavigate: (page: Page) => void; onWhatsApp: () => void }) => (
   <div className="bottom-nav">
     {[
-      ["Início", "home", "home"], ["Mensagens", "chat", "messages"], ["Anunciar", "plus", "request"], ["Contratos", "file", "messages"], ["Perfil", "user", "professional"],
+      ["Início", "home", "home"], ["WhatsApp", "whatsapp", "whatsapp"], ["Anunciar", "plus", "request"], ["Contratos", "file", "contracts"], ["Perfil", "user", "professional"],
     ].map(([label, icon, destination]) => (
       <div
         className={`nav-item ${active === label ? "active" : ""} ${label === "Anunciar" ? "nav-primary" : ""}`}
         key={label}
         role="button"
         tabIndex={0}
-        onClick={() => onNavigate(destination as Page)}
+        onClick={() => destination === "whatsapp" ? onWhatsApp() : onNavigate(destination as Page)}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            onNavigate(destination as Page);
+            if (destination === "whatsapp") onWhatsApp();
+            else onNavigate(destination as Page);
           }
         }}
       >
@@ -154,13 +164,11 @@ const ProRow = ({ photo, name, job, price, rating, distance, onSelect }: { photo
   </div>
 );
 
-const MessageRow = ({ photo, name, text, time, unread }: { photo: string; name: string; text: string; time: string; unread?: number }) => (
-  <div className="message-row">
-    <img src={photo} alt={`Foto de ${name}`} />
-    <div><b>{name}</b><span>{text}</span></div>
-    <aside><small>{time}</small>{unread && <b>{unread}</b>}</aside>
-  </div>
-);
+const initialContracts: Contract[] = [
+  { id: "OXY-2048", title: "Instalação elétrica residencial", professional: "Carlos Eduardo", date: "24 out, 2026", price: "420,00", status: "Em andamento", description: "Instalação de três pontos de tomada na sala e dois na cozinha." },
+  { id: "OXY-2031", title: "Manutenção hidráulica", professional: "Marcos Silva", date: "26 out, 2026", price: "180,00", status: "Aguardando", description: "Avaliação de vazamento e substituição do sifão da pia." },
+  { id: "OXY-1984", title: "Instalação de luminárias", professional: "Carlos Eduardo", date: "18 out, 2026", price: "260,00", status: "Concluído", description: "Instalação de duas luminárias e revisão dos pontos de luz." },
+];
 
 // Estado principal do fluxo navegável do protótipo.
 export default function App() {
@@ -174,14 +182,16 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState("Mais relevantes");
   const [requestDescription, setRequestDescription] = useState("Preciso instalar 3 pontos de tomada novos na sala e 2 na cozinha.");
   const [urgency, setUrgency] = useState("O mais rápido possível");
-  const [messageTab, setMessageTab] = useState("Todas");
+  const [contractFilter, setContractFilter] = useState("Todos");
+  const [contracts, setContracts] = useState(initialContracts);
+  const [expandedContract, setExpandedContract] = useState<string | null>(null);
   const pageNames: Record<Page, string> = {
     login: "Login",
     home: "Home / Dashboard",
     search: "Buscar serviços",
     professional: "Perfil do profissional",
     request: "Solicitar serviço",
-    messages: "Mensagens",
+    contracts: "Contratos",
   };
   const login = () => {
     if (!identifier.trim() || !password.trim()) {
@@ -195,6 +205,16 @@ export default function App() {
     if (selectedCategory) setCategory(selectedCategory);
     setPage("search");
   };
+  const openWhatsApp = (message: string) => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+  };
+  const updateContractStatus = (id: string, status: ContractStatus) => {
+    setContracts((current) => current.map((contract) => contract.id === id ? { ...contract, status } : contract));
+  };
+  const visibleContracts = contracts.filter((contract) =>
+    contractFilter === "Todos"
+      || (contractFilter === "Concluídos" ? contract.status === "Concluído" : contract.status === contractFilter),
+  );
 
   // Renderiza a tela ativa do protótipo de acordo com o estado da navegação.
   return (
@@ -229,7 +249,7 @@ export default function App() {
         {page === "home" && (
         <Phone number="02" label="Home / Dashboard">
           <div className="scroll-screen home-screen">
-            <div className="app-topline"><div><b>Olá, Ana Clara 👋</b><span><Icon name="pin" size={12}/> São Luís, MA⌄</span></div><Tap className="notification" onClick={() => setPage("messages")}><Icon name="bell"/><b>2</b></Tap></div>
+            <div className="app-topline"><div><b>Olá, Ana Clara 👋</b><span><Icon name="pin" size={12}/> São Luís, MA⌄</span></div><Tap className="notification" onClick={() => setPage("contracts")}><Icon name="bell"/><b>2</b></Tap></div>
             <div className="metrics-card">
               <div><small>Serviços encontrados</small><b>12</b></div><i/><div><small>Avaliações feitas</small><b>5</b></div><Icon name="back" size={17}/>
             </div>
@@ -244,7 +264,7 @@ export default function App() {
               <img src={photos.carlos} alt="Foto de Carlos Eduardo"/><div><span><b>Carlos Eduardo</b><Verified/></span><small>Eletricista</small><div className="rating"><Icon name="star" size={10}/><b>4,9</b> (127 avaliações)</div></div><b>Ver perfil</b>
             </Tap>
           </div>
-          <BottomNav active="Início" onNavigate={setPage}/>
+          <BottomNav active="Início" onNavigate={setPage} onWhatsApp={() => openWhatsApp("Olá! Encontrei você pelo OxyTalento e gostaria de conversar sobre um serviço.")}/>
         </Phone>
         )}
 
@@ -265,7 +285,7 @@ export default function App() {
               <ProRow photo={photos.lucas} name="Lucas Ferreira" job="Técnico em Informática" price="60" rating="4,9" distance="3,5 km de você" onSelect={() => setPage("professional")}/>
             </div>
           </div>
-          <BottomNav active="" onNavigate={setPage}/>
+          <BottomNav active="" onNavigate={setPage} onWhatsApp={() => openWhatsApp("Olá! Encontrei você pelo OxyTalento e gostaria de conversar sobre um serviço.")}/>
         </Phone>
         )}
 
@@ -292,8 +312,9 @@ export default function App() {
               <SectionHeader title="Avaliações detalhadas"/>
               <div className="review-card"><div><b>4,9</b><span>★★★★★</span><small>127 avaliações</small></div><div>{[95,72,36,15,5].map((v,i)=><span key={i}><small>{5-i}</small><i><b style={{width:`${v}%`}}/></i></span>)}</div></div>
             </div>
-            <div className="sticky-actions"><Tap onClick={() => setPage("messages")}><Icon name="whatsapp" size={14}/>Chamar no WhatsApp</Tap><Tap onClick={() => setPage("request")}>Solicitar orçamento</Tap></div>
+            <div className="sticky-actions"><Tap onClick={() => openWhatsApp("Olá, Carlos! Encontrei seu perfil no OxyTalento e gostaria de conversar sobre um serviço.")}><Icon name="whatsapp" size={14}/>Chamar no WhatsApp</Tap><Tap onClick={() => setPage("request")}>Solicitar orçamento</Tap></div>
           </div>
+          <BottomNav active="Perfil" onNavigate={setPage} onWhatsApp={() => openWhatsApp("Olá! Encontrei você pelo OxyTalento e gostaria de conversar sobre um serviço.")}/>
         </Phone>
         )}
 
@@ -313,26 +334,36 @@ export default function App() {
             <div className="radio-list">
               {["O mais rápido possível","Escolher data e horário","Ainda não sei"].map((option) => <Tap key={option} className={urgency === option ? "checked" : ""} onClick={() => setUrgency(option)}><i/><span>{option}</span>{option === "Escolher data e horário" && <Icon name="calendar" size={15}/>}</Tap>)}
             </div>
-            <Tap className="primary-button bottom-button" onClick={() => setPage("messages")}>Próximo</Tap>
+            <Tap className="primary-button bottom-button" onClick={() => openWhatsApp(`Olá, Carlos! Encontrei você pelo OxyTalento e gostaria de solicitar este serviço: ${requestDescription}`)}>Enviar pelo WhatsApp</Tap>
           </div>
         </Phone>
         )}
 
-        {page === "messages" && (
-        <Phone number="06" label="Mensagens">
-          <div className="messages-screen">
-            <div className="message-heading"><b>Mensagens</b><div><Icon name="search"/><Icon name="more"/></div></div>
-            <div className="tabs">{["Todas","Conversas","Orçamentos","Contratos"].map((tab) => <Tap key={tab} onClick={() => setMessageTab(tab)}><span className={messageTab === tab ? "active" : ""}>{tab}</span></Tap>)}</div>
-            <div className="message-list">
-              <MessageRow photo={photos.carlos} name="Carlos Eduardo" text="Já estou a caminho do local." time="10:30" unread={2}/>
-              <MessageRow photo={photos.marcos} name="Marcos Silva" text="Enviei um orçamento." time="09:15" unread={1}/>
-              <MessageRow photo={photos.juliana} name="Juliana Mendes" text="Serviço concluído! Obrigada." time="Ontem"/>
-              <MessageRow photo={photos.lucas} name="Lucas Ferreira" text="Qual o problema que você está tendo?" time="Ontem"/>
-              <MessageRow photo={photos.marcos} name="Rafael Santos" text="Obrigado pelo contato!" time="2 dias"/>
-              <MessageRow photo={photos.juliana} name="Beatriz Lima" text="Enviei um orçamento." time="3 dias"/>
+        {page === "contracts" && (
+        <Phone number="06" label="Contratos">
+          <div className="contracts-screen scroll-screen">
+            <div className="contracts-heading"><div><b>Contratos</b><span>Acompanhe seus serviços</span></div><span className="contracts-count">{contracts.filter((contract) => contract.status === "Em andamento").length} ativos</span></div>
+            <div className="contract-filters">{["Todos", "Aguardando", "Em andamento", "Concluídos"].map((filter) => <Tap key={filter} onClick={() => setContractFilter(filter)}><span className={contractFilter === filter ? "active" : ""}>{filter}</span></Tap>)}</div>
+            <div className="contract-list">
+              {visibleContracts.length === 0 && <p className="contracts-empty">Nenhum contrato nesta categoria.</p>}
+              {visibleContracts.map((contract) => (
+                <article className="contract-card" key={contract.id}>
+                  <Tap className="contract-summary" onClick={() => setExpandedContract((current) => current === contract.id ? null : contract.id)}>
+                    <span className="contract-icon"><Icon name="file" size={20}/></span>
+                    <span className="contract-main"><b>{contract.title}</b><small>{contract.id} · {contract.date}</small><small>{contract.professional}</small></span>
+                    <span className="contract-overview"><b>R$ {contract.price}</b><span className={`contract-status ${contract.status === "Em andamento" ? "in-progress" : contract.status === "Aguardando" ? "pending" : contract.status === "Concluído" ? "complete" : "cancelled"}`}>{contract.status}</span></span>
+                  </Tap>
+                  {expandedContract === contract.id && <div className="contract-details"><p>{contract.description}</p><div className="contract-actions">
+                    {contract.status === "Aguardando" && <Tap className="contract-action accept" onClick={() => updateContractStatus(contract.id, "Em andamento")}>Aceitar orçamento</Tap>}
+                    {contract.status === "Aguardando" && <Tap className="contract-action decline" onClick={() => updateContractStatus(contract.id, "Cancelado")}>Recusar</Tap>}
+                    {contract.status === "Em andamento" && <Tap className="contract-action accept" onClick={() => updateContractStatus(contract.id, "Concluído")}>Marcar como concluído</Tap>}
+                    {contract.status !== "Cancelado" && <Tap className="contract-action contact" onClick={() => openWhatsApp(`Olá, ${contract.professional}! Estou entrando em contato pelo contrato ${contract.id} (${contract.title}) no OxyTalento.`)}><Icon name="whatsapp" size={15}/>WhatsApp</Tap>}
+                  </div></div>}
+                </article>
+              ))}
             </div>
           </div>
-          <BottomNav active="Mensagens" onNavigate={setPage}/>
+          <BottomNav active="Contratos" onNavigate={setPage} onWhatsApp={() => openWhatsApp("Olá! Encontrei você pelo OxyTalento e gostaria de conversar sobre um serviço.")}/>
         </Phone>
         )}
       </section>
